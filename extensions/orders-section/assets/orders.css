@@ -118,3 +118,134 @@
   font-size: 0.8rem;
   color: #888;
 }
+
+.app-my-orders__badge--requested {
+  background: #fff4e5;
+  color: #a15c00;
+}
+
+/* Popup modal */
+.app-my-orders__modal[hidden] {
+  display: none;
+}
+
+.app-my-orders__modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.app-my-orders__modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: var(--amo-overlay-color, #0f1216);
+  opacity: var(--amo-overlay-opacity, 0.55);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  animation: app-my-orders-fade 0.2s ease both;
+}
+
+.app-my-orders__modal-box {
+  position: relative;
+  background: var(--amo-popup-bg, #fff);
+  border-radius: var(--amo-popup-radius, 16px);
+  padding: 2.25rem 2rem 1.75rem;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.28);
+  text-align: center;
+  animation: app-my-orders-pop 0.26s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+.app-my-orders__modal-icon {
+  color: var(--amo-icon-color, #2e7d32); /* success color */
+  margin-bottom: 0.5rem;
+  line-height: 0;
+}
+
+.app-my-orders__icon {
+  display: inline-block;
+}
+
+.app-my-orders__icon--error {
+  display: none;
+}
+
+.app-my-orders__modal.is-error .app-my-orders__modal-icon {
+  color: #c62828; /* error red */
+}
+
+.app-my-orders__modal.is-error .app-my-orders__icon--success {
+  display: none;
+}
+
+.app-my-orders__modal.is-error .app-my-orders__icon--error {
+  display: inline-block;
+}
+
+.app-my-orders__modal-title {
+  margin: 0 0 0.6rem;
+  color: var(--amo-title-color, #1a1a1a);
+  font-size: var(--amo-title-size, 1.25rem);
+  font-weight: var(--amo-title-weight, 700);
+}
+
+.app-my-orders__modal-message {
+  margin: 0 0 1.6rem;
+  color: var(--amo-text-color, #4a4a4a);
+  line-height: 1.55;
+  font-size: var(--amo-text-size, 0.98rem);
+  font-weight: var(--amo-text-weight, 400);
+}
+
+.app-my-orders__modal-btn {
+  appearance: none;
+  border: none;
+  background: var(--amo-btn-bg, #1a1a1a);
+  color: var(--amo-btn-color, #fff);
+  font-weight: var(--amo-btn-weight, 600);
+  font-size: var(--amo-btn-size, 1rem);
+  padding: 0.7rem 2rem;
+  border-radius: var(--amo-btn-radius, 10px);
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.05s ease;
+}
+
+.app-my-orders__modal-btn:hover {
+  filter: brightness(0.92);
+}
+
+.app-my-orders__modal-btn:active {
+  transform: translateY(1px);
+}
+
+@keyframes app-my-orders-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes app-my-orders-pop {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-my-orders__modal-backdrop,
+  .app-my-orders__modal-box {
+    animation: none;
+  }
+}

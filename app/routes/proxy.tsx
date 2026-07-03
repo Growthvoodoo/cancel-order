@@ -10,8 +10,9 @@ import prisma from "../db.server";
  * https://{shop}/apps/orders.
  *
  *  - GET  -> list the logged-in customer's orders (Admin GraphQL) merged with
- *            the cancel records we persisted locally.
- *  - POST -> cancel one order the customer owns, then persist a CancelledOrder row.
+ *            the cancel requests we persisted locally.
+ *  - POST -> record a cancel REQUEST for an order the customer owns (the Shopify
+ *            order is NOT cancelled) and notify CandyExpress so the team follows up.
  *
  * `authenticate.public.appProxy` verifies Shopify's signed request and hands us
  * an offline `admin` client for the shop. Shopify appends `logged_in_customer_id`
@@ -96,36 +97,6 @@ const ORDER_DETAILS_QUERY = `#graphql
   }
 `;
 
-const ORDER_CANCEL_MUTATION = `#graphql
-  mutation OrderCancel(
-    $orderId: ID!
-    $reason: OrderCancelReason!
-    $refund: Boolean!
-    $restock: Boolean!
-    $notifyCustomer: Boolean
-    $staffNote: String
-  ) {
-    orderCancel(
-      orderId: $orderId
-      reason: $reason
-      refund: $refund
-      restock: $restock
-      notifyCustomer: $notifyCustomer
-      staffNote: $staffNote
-    ) {
-      job {
-        id
-        done
-      }
-      orderCancelUserErrors {
-        field
-        message
-        code
-      }
-    }
-  }
-`;
-
 export async function loader({ request }: LoaderFunctionArgs) {
   const { admin, session } = await authenticate.public.appProxy(request);
 
@@ -154,22 +125,24 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   const orders = edges.map(({ node }: any) => {
     const record = recordByOrderId.get(node.id);
-    const isCancelled = Boolean(node.cancelledAt) || Boolean(record);
+    const requested = Boolean(record); // a cancel request was submitted via the app
+    const cancelledInShopify = Boolean(node.cancelledAt); // merchant actually cancelled it
     const inWindow = withinCancelWindow(node.createdAt);
     return {
       id: node.id,
       name: node.name,
       orderDate: node.createdAt,
-      cancelledAt: node.cancelledAt,
+      cancelledInShopify,
       financialStatus: node.displayFinancialStatus,
       fulfillmentStatus: node.displayFulfillmentStatus,
       total: node.totalPriceSet?.presentmentMoney ?? null,
-      // Was it cancelled through this app? If so, expose our recorded dates.
-      cancelledByApp: Boolean(record),
-      cancelDate: record?.cancelDate ?? null,
-      // Cancel button is only offered inside the 14-day window on open orders.
-      cancellable: !isCancelled && inWindow,
-      cancelWindowClosed: !isCancelled && !inWindow,
+      // A cancel request submitted through this app (order is NOT auto-cancelled).
+      requested,
+      requestDate: record?.cancelDate ?? null,
+      // The button is only offered on open orders inside the window that
+      // haven't already been requested/cancelled.
+      cancellable: !requested && !cancelledInShopify && inWindow,
+      cancelWindowClosed: !requested && !cancelledInShopify && !inWindow,
       cancelWindowDays: CANCEL_WINDOW_DAYS,
     };
   });
@@ -226,38 +199,33 @@ export async function action({ request }: ActionFunctionArgs) {
     );
   }
 
-  const cancelRes = await admin.graphql(ORDER_CANCEL_MUTATION, {
-    variables: {
-      orderId,
-      reason: "CUSTOMER",
-      refund: true,
-      restock: true,
-      notifyCustomer: true,
-      staffNote: "Cancelled by customer from the storefront My Orders section.",
-    },
+  // Idempotent: if a request already exists for this order, don't notify again.
+  const existing = await prisma.cancelledOrder.findUnique({
+    where: { shop_orderId: { shop: session.shop, orderId } },
   });
-  const cancelBody = await cancelRes.json();
-  const userErrors = cancelBody?.data?.orderCancel?.orderCancelUserErrors ?? [];
-
-  if (userErrors.length > 0) {
-    return json(
-      { ok: false, error: userErrors.map((e: any) => e.message).join(" ") },
-      { status: 422 },
-    );
+  if (existing) {
+    return json({
+      ok: true,
+      alreadyRequested: true,
+      order: {
+        id: orderId,
+        name: order.name,
+        orderDate: order.createdAt,
+        requestDate: existing.cancelDate,
+      },
+    });
   }
 
-  // Persist the cancellation so we can always show order id / order date / cancel date,
-  // even after the async cancel job settles on Shopify's side.
-  const record = await prisma.cancelledOrder.upsert({
-    where: { shop_orderId: { shop: session.shop, orderId } },
-    create: {
+  // Record the cancel REQUEST only. We intentionally do NOT call orderCancel —
+  // the merchant / CandyExpress team reviews it and follows up with the customer.
+  const record = await prisma.cancelledOrder.create({
+    data: {
       shop: session.shop,
       customerId,
       orderId,
       orderName: order.name,
       orderDate: new Date(order.createdAt),
     },
-    update: { cancelDate: new Date() },
   });
 
   // Notify the external CandyExpress system with everything we know about the order.
@@ -292,13 +260,13 @@ export async function action({ request }: ActionFunctionArgs) {
       id: orderId,
       name: order.name,
       orderDate: order.createdAt,
-      cancelDate: record.cancelDate,
+      requestDate: record.cancelDate,
     },
   });
 }
 
-// POST the cancellation to CandyExpress. Never throws: the order is already
-// cancelled, so a webhook failure must not fail the customer's request.
+// POST the cancel request to CandyExpress. Never throws: the request is already
+// recorded, so a webhook failure must not fail the customer's request.
 async function sendCancelWebhook(payload: Record<string, unknown>) {
   try {
     const res = await fetch(CANDYEXPRESS_WEBHOOK_URL, {

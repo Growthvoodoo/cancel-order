@@ -4,12 +4,20 @@
   It renders a container that orders.js fills by calling the app proxy
   ({{ block.settings.proxy_url }}, default /apps/orders). Shopify signs that
   request and appends logged_in_customer_id when a customer is signed in.
+
+  Clicking "Cancel Order" does NOT cancel the Shopify order: it records a cancel
+  REQUEST and shows the customizable popup below. The team follows up manually.
 {%- endcomment -%}
 
 <div
   class="app-my-orders"
   id="app-my-orders-{{ block.id }}"
   data-proxy-url="{{ block.settings.proxy_url }}"
+  data-popup-title="{{ block.settings.popup_title | escape }}"
+  data-popup-message="{{ block.settings.popup_message | escape }}"
+  data-close-label="{{ block.settings.popup_close_label | escape }}"
+  data-requested-label="{{ block.settings.requested_label | escape }}"
+  data-window-closed-label="{{ block.settings.window_closed_label | escape }}"
   {% if customer %}data-logged-in="true"{% else %}data-logged-in="false"{% endif %}
 >
   <h2 class="app-my-orders__heading">{{ block.settings.heading }}</h2>
@@ -26,7 +34,7 @@
         <dl class="app-my-orders__meta">
           <div><dt>Order ID</dt><dd data-role="order-id"></dd></div>
           <div><dt>Order date</dt><dd data-role="order-date"></dd></div>
-          <div data-role="cancel-date-wrap" hidden><dt>Cancel date</dt><dd data-role="cancel-date"></dd></div>
+          <div data-role="request-date-wrap" hidden><dt>Requested date</dt><dd data-role="request-date"></dd></div>
         </dl>
         <div class="app-my-orders__actions">
           <button type="button" class="app-my-orders__cancel" data-role="cancel">
@@ -35,6 +43,51 @@
         </div>
       </li>
     </template>
+
+    {%- comment -%} Popup shown after a cancel request (or on error). {%- endcomment -%}
+    <div
+      class="app-my-orders__modal"
+      data-role="modal"
+      hidden
+      style="
+        --amo-overlay-color: {{ block.settings.overlay_color }};
+        --amo-overlay-opacity: {{ block.settings.overlay_opacity | divided_by: 100.0 }};
+        --amo-popup-bg: {{ block.settings.popup_bg }};
+        --amo-popup-radius: {{ block.settings.popup_radius }}px;
+        --amo-icon-color: {{ block.settings.icon_color }};
+        --amo-title-color: {{ block.settings.title_color }};
+        --amo-title-size: {{ block.settings.title_size }}px;
+        --amo-title-weight: {{ block.settings.title_weight }};
+        --amo-text-color: {{ block.settings.text_color }};
+        --amo-text-size: {{ block.settings.text_size }}px;
+        --amo-text-weight: {{ block.settings.text_weight }};
+        --amo-btn-bg: {{ block.settings.btn_bg }};
+        --amo-btn-color: {{ block.settings.btn_color }};
+        --amo-btn-radius: {{ block.settings.btn_radius }}px;
+        --amo-btn-size: {{ block.settings.btn_size }}px;
+        --amo-btn-weight: {{ block.settings.btn_weight }};
+      "
+    >
+      <div class="app-my-orders__modal-backdrop" data-role="modal-close"></div>
+      <div class="app-my-orders__modal-box" role="dialog" aria-modal="true">
+        <div class="app-my-orders__modal-icon" aria-hidden="true">
+          <svg class="app-my-orders__icon app-my-orders__icon--success" viewBox="0 0 52 52" width="56" height="56">
+            <circle cx="26" cy="26" r="24" fill="none" stroke="currentColor" stroke-width="2" opacity="0.35" />
+            <path fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" d="M15 27l7.5 7.5L38 19" />
+          </svg>
+          <svg class="app-my-orders__icon app-my-orders__icon--error" viewBox="0 0 52 52" width="56" height="56">
+            <circle cx="26" cy="26" r="24" fill="none" stroke="currentColor" stroke-width="2" opacity="0.35" />
+            <path stroke="currentColor" stroke-width="3.5" stroke-linecap="round" d="M26 15v18" />
+            <circle cx="26" cy="39" r="1.8" fill="currentColor" />
+          </svg>
+        </div>
+        <h3 class="app-my-orders__modal-title" data-role="modal-title"></h3>
+        <p class="app-my-orders__modal-message" data-role="modal-message"></p>
+        <button type="button" class="app-my-orders__modal-btn" data-role="modal-close">
+          {{ block.settings.popup_close_label }}
+        </button>
+      </div>
+    </div>
   {%- else -%}
     <div class="app-my-orders__status">
       Please <a href="{{ routes.account_login_url }}">log in</a> to view your orders.
@@ -50,6 +103,10 @@
   "javascript": "orders.js",
   "settings": [
     {
+      "type": "header",
+      "content": "General"
+    },
+    {
       "type": "text",
       "id": "heading",
       "label": "Heading",
@@ -60,6 +117,194 @@
       "id": "cancel_label",
       "label": "Cancel button label",
       "default": "Cancel Order"
+    },
+    {
+      "type": "header",
+      "content": "Cancel request popup"
+    },
+    {
+      "type": "text",
+      "id": "popup_title",
+      "label": "Popup title",
+      "default": "Request received"
+    },
+    {
+      "type": "textarea",
+      "id": "popup_message",
+      "label": "Popup message",
+      "default": "We received your cancel order request. If the order is not delivered yet, we will contact with you."
+    },
+    {
+      "type": "text",
+      "id": "popup_close_label",
+      "label": "Popup close button label",
+      "default": "OK"
+    },
+    {
+      "type": "header",
+      "content": "Popup style"
+    },
+    {
+      "type": "color",
+      "id": "overlay_color",
+      "label": "Overlay color",
+      "default": "#0f1216"
+    },
+    {
+      "type": "range",
+      "id": "overlay_opacity",
+      "label": "Overlay opacity",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "unit": "%",
+      "default": 55
+    },
+    {
+      "type": "color",
+      "id": "popup_bg",
+      "label": "Popup background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "range",
+      "id": "popup_radius",
+      "label": "Popup corner radius",
+      "min": 0,
+      "max": 40,
+      "step": 1,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "color",
+      "id": "icon_color",
+      "label": "Success icon color",
+      "default": "#2e7d32"
+    },
+    {
+      "type": "color",
+      "id": "title_color",
+      "label": "Title color",
+      "default": "#1a1a1a"
+    },
+    {
+      "type": "range",
+      "id": "title_size",
+      "label": "Title font size",
+      "min": 14,
+      "max": 40,
+      "step": 1,
+      "unit": "px",
+      "default": 20
+    },
+    {
+      "type": "select",
+      "id": "title_weight",
+      "label": "Title font weight",
+      "options": [
+        { "value": "300", "label": "Light (300)" },
+        { "value": "400", "label": "Normal (400)" },
+        { "value": "500", "label": "Medium (500)" },
+        { "value": "600", "label": "Semibold (600)" },
+        { "value": "700", "label": "Bold (700)" },
+        { "value": "800", "label": "Extra bold (800)" }
+      ],
+      "default": "700"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Message color",
+      "default": "#4a4a4a"
+    },
+    {
+      "type": "range",
+      "id": "text_size",
+      "label": "Message font size",
+      "min": 12,
+      "max": 28,
+      "step": 1,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "select",
+      "id": "text_weight",
+      "label": "Message font weight",
+      "options": [
+        { "value": "300", "label": "Light (300)" },
+        { "value": "400", "label": "Normal (400)" },
+        { "value": "500", "label": "Medium (500)" },
+        { "value": "600", "label": "Semibold (600)" },
+        { "value": "700", "label": "Bold (700)" }
+      ],
+      "default": "400"
+    },
+    {
+      "type": "color",
+      "id": "btn_bg",
+      "label": "Button background",
+      "default": "#1a1a1a"
+    },
+    {
+      "type": "color",
+      "id": "btn_color",
+      "label": "Button text color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "range",
+      "id": "btn_radius",
+      "label": "Button corner radius",
+      "min": 0,
+      "max": 40,
+      "step": 1,
+      "unit": "px",
+      "default": 10
+    },
+    {
+      "type": "range",
+      "id": "btn_size",
+      "label": "Button font size",
+      "min": 12,
+      "max": 24,
+      "step": 1,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "select",
+      "id": "btn_weight",
+      "label": "Button font weight",
+      "options": [
+        { "value": "400", "label": "Normal (400)" },
+        { "value": "500", "label": "Medium (500)" },
+        { "value": "600", "label": "Semibold (600)" },
+        { "value": "700", "label": "Bold (700)" },
+        { "value": "800", "label": "Extra bold (800)" }
+      ],
+      "default": "600"
+    },
+    {
+      "type": "header",
+      "content": "Statuses"
+    },
+    {
+      "type": "text",
+      "id": "requested_label",
+      "label": "Label shown after a request",
+      "default": "Cancellation requested"
+    },
+    {
+      "type": "text",
+      "id": "window_closed_label",
+      "label": "Label when cancel window has passed",
+      "default": "Cancellation window closed"
+    },
+    {
+      "type": "header",
+      "content": "Advanced"
     },
     {
       "type": "text",

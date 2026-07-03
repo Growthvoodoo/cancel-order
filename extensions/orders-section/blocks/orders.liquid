@@ -1,0 +1,73 @@
+{%- comment -%}
+  "My Orders" app block.
+  Merchants add this to any page/template via the theme editor (Add section -> Apps).
+  It renders a container that orders.js fills by calling the app proxy
+  ({{ block.settings.proxy_url }}, default /apps/orders). Shopify signs that
+  request and appends logged_in_customer_id when a customer is signed in.
+{%- endcomment -%}
+
+<div
+  class="app-my-orders"
+  id="app-my-orders-{{ block.id }}"
+  data-proxy-url="{{ block.settings.proxy_url }}"
+  {% if customer %}data-logged-in="true"{% else %}data-logged-in="false"{% endif %}
+>
+  <h2 class="app-my-orders__heading">{{ block.settings.heading }}</h2>
+
+  {%- if customer -%}
+    <div class="app-my-orders__status" data-role="status">Loading your orders…</div>
+    <ul class="app-my-orders__list" data-role="list" hidden></ul>
+    <template data-role="row-template">
+      <li class="app-my-orders__item" data-role="item">
+        <div class="app-my-orders__item-main">
+          <span class="app-my-orders__name" data-role="name"></span>
+          <span class="app-my-orders__badge" data-role="badge"></span>
+        </div>
+        <dl class="app-my-orders__meta">
+          <div><dt>Order ID</dt><dd data-role="order-id"></dd></div>
+          <div><dt>Order date</dt><dd data-role="order-date"></dd></div>
+          <div data-role="cancel-date-wrap" hidden><dt>Cancel date</dt><dd data-role="cancel-date"></dd></div>
+        </dl>
+        <div class="app-my-orders__actions">
+          <button type="button" class="app-my-orders__cancel" data-role="cancel">
+            {{ block.settings.cancel_label }}
+          </button>
+        </div>
+      </li>
+    </template>
+  {%- else -%}
+    <div class="app-my-orders__status">
+      Please <a href="{{ routes.account_login_url }}">log in</a> to view your orders.
+    </div>
+  {%- endif -%}
+</div>
+
+{% schema %}
+{
+  "name": "My Orders",
+  "target": "section",
+  "stylesheet": "orders.css",
+  "javascript": "orders.js",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "My Orders"
+    },
+    {
+      "type": "text",
+      "id": "cancel_label",
+      "label": "Cancel button label",
+      "default": "Cancel Order"
+    },
+    {
+      "type": "text",
+      "id": "proxy_url",
+      "label": "App proxy path",
+      "info": "Must match the app proxy subpath configured for this app.",
+      "default": "/apps/orders"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,49 @@
+# This file stores configurations for your Shopify app.
+# With shopify.web.toml present, `shopify app dev` auto-syncs application_url,
+# redirect URLs, and app_proxy.url to the current tunnel, so these example.com
+# placeholders are only used for `shopify app deploy` of a real/production URL.
+
+client_id = "d1cf2a7ac0c5043bb8d3151c1416344d"
+name = "User Dashboard"
+handle = "user-dashboard"
+application_url = "https://example.com"
+embedded = true
+
+[build]
+automatically_update_urls_on_dev = true
+dev_store_url = "web-capty.myshopify.com"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_customers,read_orders,write_orders,customer_read_customers,customer_read_orders"
+
+[auth]
+redirect_urls = [
+  "https://example.com/auth/callback",
+  "https://example.com/auth/shopify/callback",
+  "https://example.com/api/auth/callback"
+]
+
+# Storefront App Proxy: requests to https://{shop}/apps/orders are forwarded to
+# {app_proxy.url}. Shopify appends a signed `logged_in_customer_id` param when a
+# customer is logged in on the storefront.
+[app_proxy]
+url = "https://example.com/proxy"
+subpath = "orders"
+prefix = "apps"
+
+[webhooks]
+api_version = "2025-01"
+
+  # Handled by: /app/routes/webhooks.app.uninstalled.tsx
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/app/uninstalled"
+  topics = ["app/uninstalled"]
+
+  # Handled by: /app/routes/webhooks.app.scopes_update.tsx
+  [[webhooks.subscriptions]]
+  topics = [ "app/scopes_update" ]
+  uri = "/webhooks/app/scopes_update"
+
+[pos]
+embedded = false

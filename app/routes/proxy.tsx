@@ -97,23 +97,7 @@ const ORDER_DETAILS_QUERY = `#graphql
   }
 `;
 
-export async function loader(args: LoaderFunctionArgs) {
-  try {
-    return await loaderImpl(args);
-  } catch (error: any) {
-    // TEMPORARY DEBUG: surface the real error (status 200 so Shopify passes it
-    // through instead of rendering a themed 500 page). Remove after diagnosing.
-    console.error("proxy loader error:", error);
-    return json({
-      _debug: true,
-      message: String(error?.message ?? error),
-      name: error?.name ?? null,
-      stack: String(error?.stack ?? "").split("\n").slice(0, 6),
-    });
-  }
-}
-
-async function loaderImpl({ request }: LoaderFunctionArgs) {
+export async function loader({ request }: LoaderFunctionArgs) {
   const { admin, session } = await authenticate.public.appProxy(request);
 
   if (!admin || !session) {

@@ -22,6 +22,23 @@
 >
   <h2 class="app-my-orders__heading">{{ block.settings.heading }}</h2>
 
+  {%- if customer and block.settings.show_customer -%}
+    <div class="app-my-orders__customer">
+      {%- assign customer_name = customer.name | strip -%}
+      {%- if customer_name == blank -%}
+        {%- assign customer_name = customer.first_name | append: ' ' | append: customer.last_name | strip -%}
+      {%- endif -%}
+      {%- if customer_name != blank -%}
+        <span class="app-my-orders__customer-name">
+          {{ block.settings.greeting_label }}{% if block.settings.greeting_label != blank %} {% endif %}{{ customer_name }}
+        </span>
+      {%- endif -%}
+      {%- if customer.email != blank -%}
+        <span class="app-my-orders__customer-email">{{ customer.email }}</span>
+      {%- endif -%}
+    </div>
+  {%- endif -%}
+
   {%- if customer -%}
     <div class="app-my-orders__status" data-role="status">Loading your orders…</div>
     <ul class="app-my-orders__list" data-role="list" hidden></ul>
@@ -111,6 +128,19 @@
       "id": "heading",
       "label": "Heading",
       "default": "My Orders"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_customer",
+      "label": "Show logged-in customer name & email",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "greeting_label",
+      "label": "Greeting prefix",
+      "info": "Shown before the customer name, e.g. \"Welcome,\". Leave blank for none.",
+      "default": "Welcome,"
     },
     {
       "type": "text",

@@ -164,7 +164,7 @@
   position: absolute;
   inset: 0;
   background: var(--amo-overlay-color, #0f1216);
-  opacity: var(--amo-overlay-opacity, 0.55);
+  opacity: var(--amo-overlay-opacity, 0.2);
   -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   animation: app-my-orders-fade 0.2s ease both;
@@ -249,7 +249,9 @@
     opacity: 0;
   }
   to {
-    opacity: 1;
+    /* End at the configured overlay opacity, not 1 — otherwise the animation's
+       fill-mode overrides the backdrop's opacity and forces a full-black overlay. */
+    opacity: var(--amo-overlay-opacity, 0.2);
   }
 }
 

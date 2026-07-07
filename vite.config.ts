@@ -18,8 +18,17 @@ if (
   delete process.env.HOST;
 }
 
-const host = new URL(process.env.SHOPIFY_APP_URL || "http://localhost")
-  .hostname;
+function safeHostname(value: string): string {
+  try {
+    return new URL(value).hostname;
+  } catch {
+    // SHOPIFY_APP_URL may be missing/malformed at build time (e.g. no scheme).
+    // Fall back to localhost so the build never crashes on config load.
+    return "localhost";
+  }
+}
+
+const host = safeHostname(process.env.SHOPIFY_APP_URL || "http://localhost");
 
 let hmrConfig;
 if (host === "localhost") {

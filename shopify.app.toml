@@ -6,7 +6,7 @@
 client_id = "d1cf2a7ac0c5043bb8d3151c1416344d"
 name = "User Dashboard"
 handle = "user-dashboard"
-application_url = "https://example.com"
+application_url = "https://cancel-order-git-main-candy7913.vercel.app"
 embedded = true
 
 [build]
@@ -19,16 +19,16 @@ scopes = "read_customers,read_orders,write_orders,customer_read_customers,custom
 
 [auth]
 redirect_urls = [
-  "https://example.com/auth/callback",
-  "https://example.com/auth/shopify/callback",
-  "https://example.com/api/auth/callback"
+  "https://cancel-order-git-main-candy7913.vercel.app/auth/callback",
+  "https://cancel-order-git-main-candy7913.vercel.app/auth/shopify/callback",
+  "https://cancel-order-git-main-candy7913.vercel.app/api/auth/callback"
 ]
 
 # Storefront App Proxy: requests to https://{shop}/apps/orders are forwarded to
 # {app_proxy.url}. Shopify appends a signed `logged_in_customer_id` param when a
 # customer is logged in on the storefront.
 [app_proxy]
-url = "https://example.com/proxy"
+url = "https://cancel-order-git-main-candy7913.vercel.app/proxy"
 subpath = "orders"
 prefix = "apps"
 

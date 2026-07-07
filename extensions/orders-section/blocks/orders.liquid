@@ -106,8 +106,12 @@
       </div>
     </div>
   {%- else -%}
-    <div class="app-my-orders__status">
-      Please <a href="{{ routes.account_login_url }}">log in</a> to view your orders.
+    {%- assign login_url = block.settings.login_url | default: routes.account_url -%}
+    <div class="app-my-orders__logged-out">
+      <p class="app-my-orders__logged-out-text">{{ block.settings.logged_out_text }}</p>
+      <a class="app-my-orders__login-btn" href="{{ login_url }}">
+        {{ block.settings.login_button_label }}
+      </a>
     </div>
   {%- endif -%}
 </div>
@@ -147,6 +151,28 @@
       "id": "cancel_label",
       "label": "Cancel button label",
       "default": "Cancel Order"
+    },
+    {
+      "type": "header",
+      "content": "Logged-out state"
+    },
+    {
+      "type": "text",
+      "id": "logged_out_text",
+      "label": "Logged-out message",
+      "default": "Please log in to view your orders."
+    },
+    {
+      "type": "text",
+      "id": "login_button_label",
+      "label": "Login button label",
+      "default": "Log in"
+    },
+    {
+      "type": "url",
+      "id": "login_url",
+      "label": "Login button link",
+      "info": "Where the login button points. Leave blank to use the store's default account page."
     },
     {
       "type": "header",

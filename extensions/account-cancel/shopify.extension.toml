@@ -1,4 +1,5 @@
 api_version = "2026-01"
+uid = "36711979-70b0-1867-6c45-93eb5a79e69dec7a526c"
 
 [[extensions]]
 name = "Order cancellation"

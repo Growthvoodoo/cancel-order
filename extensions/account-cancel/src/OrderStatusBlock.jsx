@@ -5,14 +5,13 @@ import {useState} from 'preact/hooks';
 // App backend that records the cancel request (same Vercel app URL).
 const APP_URL = 'https://cancel-order-git-main-candy7913.vercel.app';
 
-// Modal shown when the customer clicks the "Cancel order" action button.
+// A visible "Request cancellation" card rendered on an order's status/detail page.
 export default async () => {
-  render(<CancelAction />, document.body);
+  render(<CancelBlock />, document.body);
 };
 
-function CancelAction() {
-  // This target only exposes the order id; the backend re-fetches order details.
-  const orderId = shopify.orderId;
+function CancelBlock() {
+  const order = shopify.order.value;
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [done, setDone] = useState(false);
@@ -29,7 +28,7 @@ function CancelAction() {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({orderId}),
+        body: JSON.stringify({orderId: order?.id}),
       });
       const data = await res.json();
       if (!res.ok || !data.ok) {
@@ -45,25 +44,20 @@ function CancelAction() {
   }
 
   return (
-    <s-customer-account-action heading="Cancel order">
-      {!done && (
-        <s-button slot="primary-action" onClick={submit} loading={submitting}>
-          Confirm cancellation
-        </s-button>
-      )}
-      {!done && (
-        <s-button slot="secondary-action" onClick={() => shopify.close()}>
-          Keep order
-        </s-button>
-      )}
+    <s-section heading="Cancel order">
       <s-stack direction="block" gap="base">
         <s-text>
           {done
             ? 'We received your cancel order request. If the order is not delivered yet, we will contact you.'
-            : 'Request cancellation for this order? Our team will review and follow up with you.'}
+            : 'Need to cancel this order? Send us a cancellation request and our team will follow up.'}
         </s-text>
+        {!done && (
+          <s-button onClick={submit} loading={submitting}>
+            Request cancellation
+          </s-button>
+        )}
         {error && <s-banner tone="critical">{error}</s-banner>}
       </s-stack>
-    </s-customer-account-action>
+    </s-section>
   );
 }

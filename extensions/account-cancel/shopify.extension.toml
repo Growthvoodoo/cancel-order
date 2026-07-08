@@ -1,0 +1,17 @@
+api_version = "2026-01"
+
+[[extensions]]
+name = "Order cancellation"
+handle = "account-cancel"
+type = "ui_extension"
+
+  # "Cancel order" button in each order's action menu — appears on both the
+  # order index (list) page and the order status page.
+  [[extensions.targeting]]
+  target = "customer-account.order.action.menu-item.render"
+  module = "./src/OrderActionMenuItem.jsx"
+
+  # Confirmation modal opened when the button is clicked.
+  [[extensions.targeting]]
+  target = "customer-account.order.action.render"
+  module = "./src/OrderActionModal.jsx"
